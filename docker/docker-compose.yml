@@ -1,0 +1,111 @@
+version: '2.1'
+services:
+    redis:
+        image: 'redis:5.0.5'
+        # command: redis-server --requirepass redispass
+
+    mysql:
+        image: mycustomsql
+        environment:
+            - MYSQL_USER=admin
+            - MYSQL_ROOT_PASSWORD=12345678
+            - MYSQL_PASSWORD=12345678
+            - MYSQL_DB=airflow
+        ports:
+            - '3306:3306'
+        expose:
+            - '3306'
+        command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci
+        # Uncommentthese lines to persist data on the local filesystem.
+        #     - PGDATA=/var/lib/postgresql/data/pgdata
+        # volumes:
+        #     - ./pgdata:/var/lib/postgresql/data/pgdata
+
+    webserver:
+        image: myairflow 
+        restart: always
+        links:
+            - mysql
+        depends_on:
+            - mysql
+            - redis
+        environment:
+            - SQLALCHEMY_DATABASE_URI=mysql://root:12345678@mysql:3306/airflow
+            - LOAD_EX=n
+            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+            - EXECUTOR=Local
+            - MYSQL_USER=admin
+            - MYSQL_PASSWORD=12345678
+            - MYSQL_DB=airflow
+            # - REDIS_PASSWORD=redispass
+        volumes:
+            - /Users/nkotov/Airflow/airflow_home/dags:/usr/local/airflow/dags
+            # Uncomment to include custom plugins
+            # - ./plugins:/usr/local/airflow/plugins
+        ports:
+            - "8080:8080"
+        command: webserver
+        healthcheck:
+            test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+            interval: 30s
+            timeout: 30s
+            retries: 3
+
+#    flower: 
+#        image: newmyairflow 
+#        restart: always
+#        links:
+#            - mysql
+#        depends_on:
+#            - redis
+#        environment:
+#            - SQLALCHEMY_DATABASE_URI=mysql://root:12345678@localhost:3306/airflow
+#            - EXECUTOR=Local
+#            # - REDIS_PASSWORD=redispass
+#        ports:
+#            - "5555:5555"
+#        command: flower
+#
+#    scheduler:
+#        image: newmyairflow
+#        restart: always
+#        links:
+#            - mysql
+#        depends_on:
+#            - webserver
+#        volumes:
+#            - /Users/nkotov/Airflow/airflow_home/dags:/usr/local/airflow/dags
+#            # Uncomment to include custom plugins
+#            # - ./plugins:/usr/local/airflow/plugins
+#        environment:
+#            - SQLALCHEMY_DATABASE_URI=mysql://root:12345678@localhost:3306/airflow
+#            - LOAD_EX=n
+#            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+#            - EXECUTOR=Local
+#            - MYSQL_USER=admin
+#            - MYSQL_PASSWORD=12345678
+#            - MYSQL_DB=airflow
+#            # - REDIS_PASSWORD=redispass
+#        command: scheduler
+#
+#    worker:
+#        image: newmyairflow
+#        restart: always
+#        links:
+#            - db
+#        depends_on:
+#            - scheduler
+#        volumes:
+#            - /Users/nkotov/Airflow/airflow_home/dags:/usr/local/airflow/dags
+#            # Uncomment to include custom plugins
+#            # - ./plugins:/usr/local/airflow/plugins
+#        environment:
+#            - SQLALCHEMY_DATABASE_URI=mysql://root:12345678@localhost:3306/airflow
+#            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+#            - EXECUTOR=Local
+#            - MYSQL_USER=admin
+#            - MYSQL_PASSWORD=12345678
+#            - MYSQL_DB=airflow
+#            # - REDIS_PASSWORD=redispass
+#        command: worker
+

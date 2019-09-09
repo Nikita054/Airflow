@@ -1,22 +1,35 @@
 import datetime as dt
+import logging
 
 from airflow import DAG
 from airflow.hooks.postgres_hook import PostgresHook
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python_operator import PythonOperator, BranchPythonOperator
 from airflow.utils.helpers import cross_downstream, chain
 
 from custom.custom_operator import MyDummyOperator, MySensor
 from model.default_args import default_args
-
 from custom.custom_operator import MySkipDummyOperator
+
+log = logging.getLogger(__name__)
 
 
 def get_data(**kwargs):
     connection = PostgresHook(postgres_conn_id='postgres_default')
     sql = 'SELECT * FROM users_table'
     data = connection.get_records(sql)
-    print(kwargs['dag_run'].conf['test'])
+    log.info(kwargs['dag_run'].conf['condition'])
     return data
+
+
+def branch_func(**kwargs):
+    t_i = kwargs['ti']
+    condition = t_i.xcom_pull(key='condition', task_ids='get_data')
+    if condition == "Odd":
+        return 'dummy_operator2'
+    elif condition == 'Even':
+        return ['dummy_operator1', 'dummy_operator3']
+    else:
+        return ['dummy_operator1', 'dummy_operator2', 'dummy_operator3']
 
 
 def count_age(**kwargs):
@@ -47,7 +60,11 @@ dag_counter = DAG('counter', description='Simple tutorial DAG',
                   default_args=default_args,
                   catchup=False)
 
-opt_custom_skip_operator = MySkipDummyOperator(my_operator_param="skip", task_id='skip_operator', dag=dag_counter)
+# opt_custom_skip_operator = MySkipDummyOperator(my_operator_param="skip", task_id='skip_operator', dag=dag_counter)
+opt_branch_operator = BranchPythonOperator(task_id='branch_task',
+                                           provide_context=True,
+                                           python_callable=branch_func,
+                                           dag=dag_counter)
 opt_custom_operator1 = MyDummyOperator(my_operator_param="1", task_id='dummy_operator1', dag=dag_counter)
 opt_custom_operator2 = MyDummyOperator(my_operator_param="2", task_id='dummy_operator2', dag=dag_counter)
 opt_custom_operator3 = MyDummyOperator(my_operator_param="3", task_id='dummy_operator3', dag=dag_counter)
@@ -61,9 +78,9 @@ opt_save_data = PythonOperator(task_id='save_data', python_callable=save_new_dat
                                dag=dag_counter)
 opt_sensor = MySensor(task_id='sensor_task', poke_interval=1, provide_context=True, dag=dag_counter)
 
-chain(opr_get_data, [opt_custom_skip_operator,
-                     opt_custom_operator2,
-                     opt_custom_operator3], [opt_custom_operator4,
-                                             opt_custom_operator5,
-                                             opt_custom_operator6], opt_count_age, opt_save_data)
+chain(opr_get_data, opt_branch_operator, [opt_custom_operator1,
+                                          opt_custom_operator2,
+                                          opt_custom_operator3], [opt_custom_operator4,
+                                                                  opt_custom_operator5,
+                                                                  opt_custom_operator6], opt_count_age, opt_save_data)
 opt_sensor

@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 
 from airflow import DAG
 from airflow.hooks.postgres_hook import PostgresHook
@@ -6,6 +7,7 @@ from airflow.operators.dagrun_operator import TriggerDagRunOperator
 from airflow.operators.python_operator import PythonOperator
 
 from model.default_args import default_args
+log = logging.getLogger(__name__)
 
 
 def init_table(**kwargs):
@@ -22,7 +24,7 @@ def init_data(**kwargs):
     name = 'Default name'
     surname = 'Default surname'
     t_i = kwargs['ti']
-    t_i.xcom_push('test', 'Test param from init data')
+    t_i.xcom_push('condition', 'Odd')
     for i in range(100):
         birth = dt.datetime(dt.datetime.today().year - i, 1, 10)
         connection.run(sql, autocommit=True, parameters=(name, surname, birth))
@@ -32,9 +34,10 @@ def init_data(**kwargs):
 def conditionally_trigger(context, dag_run_obj):
     c_p = context['params']['condition_param']
     t_i = context['ti']
-    my_test_param = t_i.xcom_pull(key='test', task_ids='init_data')
+    condition = t_i.xcom_pull(key='condition', task_ids='init_data')
+
     if c_p:
-        dag_run_obj.payload = {'message': context['params']['message'], 'test': my_test_param}
+        dag_run_obj.payload = {'message': context['params']['message'], 'condition': condition}
         return dag_run_obj
     return None
 

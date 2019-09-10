@@ -17,16 +17,15 @@ def get_data(**kwargs):
     connection = PostgresHook(postgres_conn_id='postgres_default')
     sql = 'SELECT * FROM users_table'
     data = connection.get_records(sql)
-    log.info(kwargs['dag_run'].conf['condition'])
     return data
 
 
 def branch_func(**kwargs):
     t_i = kwargs['ti']
-    condition = t_i.xcom_pull(key='condition', task_ids='get_data')
+    condition = t_i.xcom_pull(key='condition', dag_id='initializer', include_prior_dates=True)
     if condition == "Odd":
         return 'dummy_operator2'
-    elif condition == 'Even':
+    elif condition == "Even":
         return ['dummy_operator1', 'dummy_operator3']
     else:
         return ['dummy_operator1', 'dummy_operator2', 'dummy_operator3']

@@ -25,9 +25,9 @@ services:
             - LOAD_EX=n
             - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
             - EXECUTOR=Celery
-            # - POSTGRES_USER=airflow
-            # - POSTGRES_PASSWORD=airflow
-            # - POSTGRES_DB=airflow
+            - POSTGRES_USER=airflow
+            - POSTGRES_PASSWORD=airflow
+            - POSTGRES_DB=airflow
             # - REDIS_PASSWORD=redispass
         volumes:
             - /Users/nkotov/PycharmProjects/FirstApp/dags:/usr/local/airflow/dags
@@ -67,9 +67,9 @@ services:
             - LOAD_EX=n
             - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
             - EXECUTOR=Celery
-            # - POSTGRES_USER=airflow
-            # - POSTGRES_PASSWORD=airflow
-            # - POSTGRES_DB=airflow
+            - POSTGRES_USER=airflow
+            - POSTGRES_PASSWORD=airflow
+            - POSTGRES_DB=airflow
             # - REDIS_PASSWORD=redispass
         command: scheduler
 
@@ -85,8 +85,8 @@ services:
         environment:
             - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
             - EXECUTOR=Celery
-            # - POSTGRES_USER=airflow
-            # - POSTGRES_PASSWORD=airflow
-            # - POSTGRES_DB=airflow
+            - POSTGRES_USER=airflow
+            - POSTGRES_PASSWORD=airflow
+            - POSTGRES_DB=airflow
             # - REDIS_PASSWORD=redispass
         command: worker

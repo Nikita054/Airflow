@@ -6,10 +6,10 @@ TRY_LOOP="20"
 : "${REDIS_PORT:="6379"}"
 : "${REDIS_PASSWORD:=""}"
 
-: "${POSTGRES_HOST:="db"}"
-: "${POSTGRES_PORT:="3306"}"
-: "${POSTGRES_USER:="root"}"
-: "${POSTGRES_PASSWORD:="12345678"}"
+: "${POSTGRES_HOST:="postgres"}"
+: "${POSTGRES_PORT:="5432"}"
+: "${POSTGRES_USER:="airflow"}"
+: "${POSTGRES_PASSWORD:="airflow"}"
 : "${POSTGRES_DB:="airflow"}"
 
 # Defaults and back-compat
@@ -34,8 +34,10 @@ then
 fi
 
 # Install custom python package if requirements.txt is present
-if [ -e "/requirements.txt" ]; then
-    $(command -v pip) install --user -r /requirements.txt
+if [ -e "/requirements/requirements.txt" ]; then
+    echo "$(date) - Install requirements.txt!!!"
+    $(command -v pip) install --user -r /requirements/requirements.txt
+    echo "$(date) - Installed requirements.txt!!!"
 fi
 
 if [ -n "$REDIS_PASSWORD" ]; then
@@ -59,8 +61,8 @@ wait_for_port() {
 }
 
 if [ "$AIRFLOW__CORE__EXECUTOR" != "SequentialExecutor" ]; then
-  AIRFLOW__CORE__SQL_ALCHEMY_CONN="mysql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB"
-  AIRFLOW__CELERY__RESULT_BACKEND="db+mysql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB"
+  AIRFLOW__CORE__SQL_ALCHEMY_CONN="postgresql+psycopg2://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB"
+  AIRFLOW__CELERY__RESULT_BACKEND="db+postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB"
   wait_for_port "Postgres" "$POSTGRES_HOST" "$POSTGRES_PORT"
 fi
 
@@ -72,7 +74,6 @@ fi
 case "$1" in
   webserver)
     airflow initdb
-    airflow upgradedb
     if [ "$AIRFLOW__CORE__EXECUTOR" = "LocalExecutor" ] || [ "$AIRFLOW__CORE__EXECUTOR" = "SequentialExecutor" ]; then
       # With the "Local" and "Sequential" executors it should all run in one container.
       airflow scheduler &

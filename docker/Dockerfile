@@ -71,8 +71,10 @@ RUN set -ex \
         /usr/share/doc \
         /usr/share/doc-base
 
-COPY script/entrypoint.sh /entrypoint.sh
-COPY config/airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg
+COPY docker/script/entrypoint.sh /entrypoint.sh
+COPY docker/config/airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg
+COPY docker/requirements/requirements.txt /requirements/requirements.txt
+# COPY /dags /usr/local/airflow/dags
 
 RUN chown -R airflow: ${AIRFLOW_USER_HOME}
 

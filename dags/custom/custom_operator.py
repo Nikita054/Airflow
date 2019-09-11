@@ -1,9 +1,6 @@
 from airflow.exceptions import AirflowSkipException
-from airflow.models import BaseOperator
+from airflow.models import BaseOperator, TaskInstance
 import logging
-
-from airflow.operators.sensors import BaseSensorOperator
-from airflow.plugins_manager import AirflowPlugin
 from airflow.utils.decorators import apply_defaults
 
 log = logging.getLogger(__name__)
@@ -28,22 +25,3 @@ class MySkipDummyOperator(BaseOperator):
 
     def execute(self, context):
         raise AirflowSkipException
-
-
-class MySensor(BaseSensorOperator):
-    def __init__(self, *args, **kwargs):
-        super(MySensor, self).__init__(*args, **kwargs)
-
-    def poke(self, context):
-        task_instance = context['ti']
-        age = task_instance.xcom_pull(key='age', task_ids='count_age')
-        print("Age is {}".format(age))
-        if age is not None and age > 70:
-            return True
-        print("Age lower than 70!")
-        return False
-
-
-class MyPlugin(AirflowPlugin):
-    name = "My plugin"
-    operators = [MyDummyOperator, MySensor]
